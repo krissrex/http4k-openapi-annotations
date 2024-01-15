@@ -7,7 +7,7 @@ TODO:
 However, the same serializer is applied to the `SchemaNode` hierarchy while generating the final schema, bloating the output.
 2. ~~Correctly serialize maps of maps. It currently creates extra `properties`-levels (instead of `additionalProperties`), and uses example keys as actual keys.~~ Supported.
 
-Stuff are prefixed with `Liflig` because it's my current employer. I just needed to separate code from the default http4k classes. 
+Stuff is prefixed with `Liflig` because it's my current employer. I just needed to separate code from the default http4k classes. 
 
 ---
 
