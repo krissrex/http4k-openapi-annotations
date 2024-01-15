@@ -25,7 +25,6 @@ import org.http4k.filter.ServerFilters
 import org.http4k.format.ConfigurableJackson
 import org.http4k.server.SunHttp
 import org.http4k.server.asServer
-import java.time.Instant
 import java.time.LocalDate
 
 fun main() {
