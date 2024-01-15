@@ -25,6 +25,7 @@ import org.http4k.filter.ServerFilters
 import org.http4k.format.ConfigurableJackson
 import org.http4k.server.SunHttp
 import org.http4k.server.asServer
+import java.time.Instant
 import java.time.LocalDate
 
 fun main() {
@@ -67,10 +68,15 @@ fun main() {
                     uncertainties = listOf("uncertainty"),
                     objectETag = "eTag",
                     deadline = LocalDate.MIN,
-                    completed = null /*CompletedMeasureDto(
+                    completed = CompletedMeasureDto(
                         completedBy = "d73bf1ae-641e-4ca4-aa04-6ed5ea186c89",
                         completedOn = Instant.EPOCH
-                    )*/
+                    ),
+                    myMap = mapOf(
+                        "outerKey1" to mapOf("innerKey1" to 3.14, "innerKey12" to 3.14159),
+                        "outerKey2" to mapOf("innerKey2" to 2.71)
+                    ),
+                    myMapWithAnything = mapOf("number" to 4, "bool" to true),
                 )
             )
         } bindContract Method.GET to { req: Request ->

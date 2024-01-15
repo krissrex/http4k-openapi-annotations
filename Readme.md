@@ -2,9 +2,10 @@ A proof-of-concept on modifying HTTP4k to allow null primitives in the Contract 
 Also adds a new annotation to set `description` and `required`.
 
 
-TODO: not serialize every nullable field of the `SchemaNode`, while still providing schema for null fields in the example. You need to serialize nulls because the schema generator looks at the json first, class second. The example is serialized to json, then the keys are traversed.
+TODO: 
+1. Not serialize every nullable field of the `SchemaNode`, while still providing schema for null fields in the example. You need to serialize nulls because the schema generator looks at the json first, class second. The example is serialized to json, then the keys are traversed.
 However, the same serializer is applied to the `SchemaNode` hierarchy while generating the final schema, bloating the output.
-
+2. ~~Correctly serialize maps of maps. It currently creates extra `properties`-levels (instead of `additionalProperties`), and uses example keys as actual keys.~~ Supported.
 
 Stuff are prefixed with `Liflig` because it's my current employer. I just needed to separate code from the default http4k classes. 
 

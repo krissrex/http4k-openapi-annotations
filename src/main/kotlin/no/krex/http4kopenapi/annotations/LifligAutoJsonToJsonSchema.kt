@@ -199,6 +199,86 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
         metadata: FieldMetadata?,
         refModelNamePrefix: String
     ): SchemaNode {
+        val objWithStringKeys: Map<String?, Any?> = obj.mapKeys { it.key?.let(::toJsonKey) }
+
+        // If it is a map of primitives, return that using the `type` in additionalProperties
+        val valueTypes =
+            obj.values.filterNotNull().map { json.typeOf(json.asJsonObject(it)) }.distinct()
+        val firstValue = obj.values.firstOrNull()
+        if (valueTypes.size == 1 && valueTypes.first() != JsonType.Object && valueTypes.first() != JsonType.Array) {
+            return SchemaNode.MapType(
+                objName ?: modelNamer(obj),
+                isNullable,
+                SchemaNode.Primitive(
+                    modelNamer(obj),
+                    valueTypes.first().toParam(),
+                    isNullable,
+                    firstValue,
+                    null
+                ), metadata
+            )
+        }
+
+        val properties = json.fields(this)
+            .map { Triple(it.first, it.second, objWithStringKeys[it.first]!!) }
+            .map { (fieldName, field, value) ->
+                makePropertySchemaFor(
+                    field,
+                    fieldName,
+                    value,
+                    true,
+                    fieldRetrieval(
+                        FieldHolder(value),
+                        "value"
+                    ).metadata + FieldMetadata("required" to false),
+                    refModelNamePrefix,
+                    obj
+                )
+            }
+            .map { it.name() to it }.toMap()
+
+        return if (topLevel && objName != null) {
+            SchemaNode.Reference(
+                objName,
+                "#/$refLocationPrefix/$refModelNamePrefix$objName",
+                SchemaNode.Object(refModelNamePrefix + objName, isNullable, properties, this, null),
+                metadata
+            )
+        } else if (valueTypes.size > 1) {
+            SchemaNode.MapAnyType(
+                name = objName ?: modelNamer(obj),
+                isNullable = isNullable,
+                additionalProperties = true,
+                metadata = metadata,
+                example = obj
+            )
+        } else {
+            val additionalProperties: SchemaNode = json.asJsonObject(firstValue!!).toObjectOrMapSchema(
+                modelNamer(firstValue),
+                firstValue,
+                isNullable,
+                false,
+                metadata,
+                refModelNamePrefix
+            )
+            SchemaNode.MapType(
+                name = objName ?: modelNamer(obj),
+                isNullable = isNullable,
+                additionalProperties = additionalProperties,
+                metadata = metadata
+            )
+        }
+    }
+
+    private fun NODE.toWrongMapSchema(
+        objName: String?,
+        obj: Map<*, *>,
+        isNullable: Boolean,
+        topLevel: Boolean,
+        metadata: FieldMetadata?,
+        refModelNamePrefix: String
+    ): SchemaNode {
+        /// old and wrong. Makes an extra properties with additionalProperties inside
         val objWithStringKeys = obj.mapKeys { it.key?.let(::toJsonKey) }
         val properties = json.fields(this)
             .map { Triple(it.first, it.second, objWithStringKeys[it.first]!!) }
@@ -208,7 +288,10 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
                     fieldName,
                     value,
                     true,
-                    fieldRetrieval(FieldHolder(value), "value").metadata,
+                    fieldRetrieval(
+                        FieldHolder(value),
+                        "value"
+                    ).metadata + FieldMetadata("required" to false),
                     refModelNamePrefix,
                     obj
                 )
@@ -447,6 +530,7 @@ private sealed class SchemaNode(
         private val schemaNode: SchemaNode,
         metadata: FieldMetadata?
     ) : SchemaNode(name, ObjectParam, schemaNode.isNullable, null, metadata) {
+
         override fun arrayItem() = ArrayItem.Ref(`$ref`, this)
         override fun definitions() = listOf(schemaNode) + schemaNode.definitions()
     }
@@ -461,6 +545,22 @@ private sealed class SchemaNode(
         val type = paramMeta().value
         override fun arrayItem() = ArrayItem.Ref(name(), this)
         override fun definitions() = additionalProperties.definitions()
+    }
+
+    /**
+     * Has no restriction of type in [additionalProperties].
+     */
+    class MapAnyType(
+        name: String,
+        isNullable: Boolean,
+        val additionalProperties: Boolean = true,
+        metadata: FieldMetadata?,
+        example: Any?
+    ) :
+        SchemaNode(name, ObjectParam, isNullable, example, metadata) {
+        val type = paramMeta().value
+        override fun arrayItem() = ArrayItem.Ref(name(), this)
+        override fun definitions() = emptyList<SchemaNode>()
     }
 }
 
@@ -486,7 +586,8 @@ private fun JsonType.toParam() = when (this) {
  */
 private fun guessParam(fieldName: String, parent: Any): ParamMeta {
     // Does this need the field renamer from Metadata retrieval?
-    val fieldType: KType? = parent.javaClass.kotlin.memberProperties.find { it.name == fieldName }?.returnType
+    val fieldType: KType? =
+        parent.javaClass.kotlin.memberProperties.find { it.name == fieldName }?.returnType
 
     if (fieldType == null) {
         throw IllegalSchemaException("Cannot use a null value in a schema! Unable to guess class for $fieldName")
