@@ -44,5 +44,3 @@ class ExamplesWithNullLookup(
         )
     }
 }
-
-public object NullField
