@@ -204,7 +204,7 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
         // If it is a map of primitives, return that using the `type` in additionalProperties
         val valueTypes =
             obj.values.filterNotNull().map { json.typeOf(json.asJsonObject(it)) }.distinct()
-        val firstValue = obj.values.firstOrNull()
+        val firstValue: Any = obj.values.first()!! // FIXME: Would crash for empty maps!
         if (valueTypes.size == 1 && valueTypes.first() != JsonType.Object && valueTypes.first() != JsonType.Array) {
             return SchemaNode.MapType(
                 objName ?: modelNamer(obj),
@@ -214,7 +214,7 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
                     valueTypes.first().toParam(),
                     isNullable,
                     firstValue,
-                    null
+                    fieldRetrieval(FieldHolder(firstValue), "value").metadata
                 ), metadata
             )
         }
@@ -253,7 +253,7 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
                 example = obj
             )
         } else {
-            val additionalProperties: SchemaNode = json.asJsonObject(firstValue!!).toObjectOrMapSchema(
+            val additionalProperties: SchemaNode = json.asJsonObject(firstValue).toObjectOrMapSchema(
                 modelNamer(firstValue),
                 firstValue,
                 isNullable,
