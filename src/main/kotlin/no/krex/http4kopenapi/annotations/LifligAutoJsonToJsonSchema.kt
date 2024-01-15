@@ -1,3 +1,7 @@
+/*
+License: Apache 2.0 by the http4k project.
+Modified by Kristian Rekstad.
+ */
 package no.krex.http4kopenapi.annotations
 
 import org.http4k.contract.jsonschema.IllegalSchemaException
