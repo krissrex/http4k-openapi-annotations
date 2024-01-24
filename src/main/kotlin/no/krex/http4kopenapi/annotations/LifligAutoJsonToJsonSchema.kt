@@ -34,7 +34,10 @@ import kotlin.reflect.full.memberProperties
  * Use metadata for that instead.
  */
 class LifligAutoJsonToJsonSchema<NODE : Any>(
+    /** May include nulls if used with [ExamplesWithNullLookup]. */
     private val json: AutoMarshallingJson<NODE>,
+    /** Must NOT include nulls. */
+    private val schemaJson: AutoMarshallingJson<NODE>,
     private val fieldRetrieval: FieldRetrieval = FieldRetrieval.compose(
         SimpleLookup(
             metadataRetrievalStrategy = PrimitivesFieldMetadataRetrievalStrategy
@@ -52,8 +55,9 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
         val schema = json.asJsonObject(obj)
             .toSchema(obj, overrideDefinitionId, true, refModelNamePrefix.orEmpty(), null)
         return JsonSchema(
-            json.asJsonObject(schema),
-            schema.definitions().map { it.name() to json.asJsonObject(it) }.distinctBy { it.first }
+            schemaJson.asJsonObject(schema),
+            schema.definitions().map { it.name() to schemaJson.asJsonObject(it) }
+                .distinctBy { it.first }
                 .toSet()
         )
     }
@@ -253,14 +257,15 @@ class LifligAutoJsonToJsonSchema<NODE : Any>(
                 example = obj
             )
         } else {
-            val additionalProperties: SchemaNode = json.asJsonObject(firstValue).toObjectOrMapSchema(
-                modelNamer(firstValue),
-                firstValue,
-                isNullable,
-                false,
-                metadata,
-                refModelNamePrefix
-            )
+            val additionalProperties: SchemaNode =
+                json.asJsonObject(firstValue).toObjectOrMapSchema(
+                    modelNamer(firstValue),
+                    firstValue,
+                    isNullable,
+                    false,
+                    metadata,
+                    refModelNamePrefix
+                )
             SchemaNode.MapType(
                 name = objName ?: modelNamer(obj),
                 isNullable = isNullable,

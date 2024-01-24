@@ -3,10 +3,8 @@ package no.krex.http4kopenapi.annotations
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.JsonNode
 import org.http4k.contract.contract
-import org.http4k.contract.jsonschema.v3.FieldRetrieval
 import org.http4k.contract.jsonschema.v3.JacksonFieldMetadataRetrievalStrategy
 import org.http4k.contract.jsonschema.v3.PrimitivesFieldMetadataRetrievalStrategy
-import org.http4k.contract.jsonschema.v3.SimpleLookup
 import org.http4k.contract.jsonschema.v3.then
 import org.http4k.contract.meta
 import org.http4k.contract.openapi.ApiInfo
@@ -37,11 +35,13 @@ fun main() {
             json = OpenAPIJackson,
             schema = LifligAutoJsonToJsonSchema(
                 json = ConfigurableJackson(
-                    OpenAPIJackson.mapper.setSerializationInclusion(
+                    /* copy() is important. Otherwise we modify OpenAPIJackson for everyone. */
+                    OpenAPIJackson.mapper.copy().setSerializationInclusion(
                         /* Lets the schema generator see fields that are `null` in the example. */
                         JsonInclude.Include.ALWAYS
                     )
                 ),
+                schemaJson = OpenAPIJackson,
                 fieldRetrieval = ExamplesWithNullLookup(
                     metadataRetrievalStrategy =
                     JacksonFieldMetadataRetrievalStrategy
