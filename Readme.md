@@ -12,6 +12,10 @@ Fixes:
 5. Correct schema for map-of-various: `mapOf("key" to 1, "key2" to true)` -> `"additionalProperties": true` .
 
 
+TODO:
+* Nullable refs https://stackoverflow.com/questions/40920441/how-to-specify-a-property-can-be-null-or-a-reference-with-swagger
+* `Map<String, List<String>>` now makes the List an `object` of ref `ArrayList` with `type: object`.
+
 Stuff is prefixed with `Liflig` because it's my current employer. I just needed to separate code from the default http4k classes. 
 
 ---
